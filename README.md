@@ -1,1 +1,1 @@
-See index.html and script.js headers.
+Added pinch-zoom & pan with on-screen controls. One-finger selects. Two-finger pinch/drag zooms and pans. Also +/- buttons.

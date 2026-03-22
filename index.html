@@ -3,9 +3,9 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes" />
   <title>תפזורת שמות</title>
-  <meta name="description" content="תפזורת שמות – משחק רשת מותאם למובייל" />
+  <meta name="description" content="תפזורת שמות – משחק רשת מותאם למובייל עם זום וגרירה" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -18,12 +18,21 @@
   </header>
 
   <main class="container">
-    <section class="board-wrapper">
-      <div id="board" class="board" aria-label="לוח המשחק" role="grid"></div>
+    <section class="board-wrapper" id="board-wrapper">
+      <div class="zoom-toolbar">
+        <button id="zoom-out" title="-">−</button>
+        <span id="zoom-label">100%</span>
+        <button id="zoom-in" title="+">+</button>
+        <button id="zoom-reset" title="איפוס זום">איפוס</button>
+      </div>
+      <div id="zoom-layer" class="zoom-layer">
+        <div id="board" class="board" aria-label="לוח המשחק" role="grid"></div>
+      </div>
     </section>
     <aside class="sidebar">
       <h2>רשימת שמות</h2>
       <ul id="word-list" class="word-list"></ul>
+      <p class="note">מחוות: צביטה לשינוי זום (2 אצבעות), גרירה בשתי אצבעות להזזה. נגיעה באצבע אחת לבחירת אותיות.</p>
     </aside>
   </main>
 
@@ -33,7 +42,6 @@
       <span class="badge badge-found">נמצא</span>
       <span class="badge badge-selecting">בבחירה</span>
     </div>
-    <p class="note">טיפ: גררו עם האצבע או העכבר מראשית המילה עד סופה (כולל אלכסונים).</p>
   </footer>
 
   <script>
