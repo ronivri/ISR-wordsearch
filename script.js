@@ -5,7 +5,7 @@
   // --- Hebrew helpers ---
   const finalMap = new Map(Object.entries({ 'כ':'ך','מ':'ם','נ':'ן','פ':'ף','צ':'ץ' }));
   const medialFromFinal = new Map(Array.from(finalMap.entries()).map(([k,v])=>[v,k]));
-  const hebrewLetters = Array.from('אבגדהוזחטיכלמנסעפצקרשת'); // medial forms only
+  const hebrewLetters = Array.from('אבגדהוזחטיכלמנסעפצקרשת'); // medial only
   const isHebrew = ch => /[֐-׿]/.test(ch);
   const normalize = name => name.split('').filter(isHebrew).map(ch => medialFromFinal.get(ch) || ch).join('');
 
@@ -20,47 +20,36 @@
   const listEl = document.getElementById('word-list');
   const btnNew = document.getElementById('btn-new');
   const btnReset = document.getElementById('btn-reset');
+  const btnToggleSolution = document.getElementById('btn-toggle-solution');
+  const foundCountEl = document.getElementById('found-count');
+  const totalCountEl = document.getElementById('total-count');
 
-  // Zoom/pan elements
+  // Zoom layer (pinch/pan)
   const zoomLayer = document.getElementById('zoom-layer');
-  const zoomLabel = document.getElementById('zoom-label');
-  const zoomInBtn = document.getElementById('zoom-in');
-  const zoomOutBtn = document.getElementById('zoom-out');
-  const zoomResetBtn = document.getElementById('zoom-reset');
-
-  // Zoom state
   let scale = 1, minScale = 1, maxScale = 3, tx = 0, ty = 0;
-  function applyTransform(){
-    zoomLayer.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
-    zoomLabel.textContent = Math.round(scale*100)+'%';
-  }
-  function zoomBy(delta, center){
-    const old = scale; let next = Math.min(maxScale, Math.max(minScale, scale*delta));
-    if(next===scale) return;
-    // keep the point under fingers stationary: adjust translation
-    const rect = zoomLayer.getBoundingClientRect();
-    const cx = center?.x ?? (rect.left + rect.width/2);
-    const cy = center?.y ?? (rect.top + rect.height/2);
-    tx = cx - (cx - tx) * (next/old);
-    ty = cy - (cy - ty) * (next/old);
-    scale = next; applyTransform();
-  }
-  function setScale(s, center){ zoomBy(s/scale, center); }
-  function resetZoom(){ scale=1; tx=0; ty=0; applyTransform(); }
-
-  zoomInBtn.addEventListener('click', ()=>zoomBy(1.2));
-  zoomOutBtn.addEventListener('click', ()=>zoomBy(1/1.2));
-  zoomResetBtn.addEventListener('click', resetZoom);
+  function applyTransform(){ zoomLayer.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`; }
+  function resetView(){ scale=1; tx=0; ty=0; applyTransform(); }
 
   btnNew.addEventListener('click', () => { newGame(true); });
-  btnReset.addEventListener('click', () => { clearSelections(true); });
+  btnReset.addEventListener('click', () => { clearSelections(true); updateCounter(); });
+  btnToggleSolution.addEventListener('click', () => { toggleSolution(); });
 
   function newGame(){
     foundIds.clear();
     generateGrid();
     renderBoard();
     renderWordList();
-    resetZoom();
+    resetView();
+    totalCountEl.textContent = wordsMedial.length;
+    updateCounter();
+    setSolution(false);
+  }
+
+  function updateCounter(){
+    // Count distinct words found
+    const wordsFound = new Set();
+    for(const p of placements){ if(foundIds.has(p.id)) wordsFound.add(p.word); }
+    foundCountEl.textContent = wordsFound.size;
   }
 
   function generateGrid(){
@@ -105,6 +94,7 @@
       el.textContent=ch; boardEl.appendChild(el);
     }
     wireSelection();
+    applySolutionOverlay();
   }
 
   function renderWordList(){
@@ -114,13 +104,12 @@
     });
   }
 
-  // Selection handlers (one finger)
+  // Selection (single finger)
   function wireSelection(){
     let start=null, dir=null, currentPath=[];
 
     const onPointerDown = (ev)=>{
-      // אם יש יותר מאצבע אחת על המסך – זה מצב זום/פאן, לא מתחילים בחירה
-      if(activePointers.size>0) return; 
+      if(activePointers.size>0) return; // multitouch -> zoom/pan
       const target = ev.target.closest('.cell'); if(!target) return;
       ev.preventDefault();
       boardEl.setPointerCapture?.(ev.pointerId);
@@ -128,8 +117,7 @@
       updateSelectingClasses(currentPath);
     };
 
-    const onPointerMove = (ev)=>{
-      if(!start) return; ev.preventDefault();
+    const onPointerMove = (ev)=>{ if(!start) return; ev.preventDefault();
       const el = document.elementFromPoint(ev.clientX, ev.clientY); const target=el?.closest?.('.cell'); if(!target) return;
       const r=+target.dataset.r, c=+target.dataset.c; if(r===start.r && c===start.c){ currentPath=[start]; updateSelectingClasses(currentPath); return; }
       const dR=r-start.r, dC=c-start.c; const [dy,dx]=unitDirection(dR,dC); if(dy===0 && dx===0) return; if(!dir){ dir=[dy,dx]; }
@@ -150,59 +138,38 @@
   function updateSelectingClasses(path){ clearSelectingClasses(); for(const {r,c} of path){ const el=cellAt(r,c); if(el) el.classList.add('selecting'); } }
   function clearSelectingClasses(){ boardEl.querySelectorAll('.cell.selecting').forEach(el=>el.classList.remove('selecting')); }
   function flashWrong(path){ for(const {r,c} of path){ const el=cellAt(r,c); if(el){ el.classList.add('wrong'); setTimeout(()=>el.classList.remove('wrong'),250); } } }
-  function markFound(path, placement){ for(const {r,c} of path){ const el=cellAt(r,c); if(el) el.classList.add('found'); } foundIds.add(placement.id); listEl.querySelectorAll('li').forEach(li=>{ if(li.dataset.wordMedial===placement.word) li.classList.add('found'); }); }
+  function markFound(path, placement){ for(const {r,c} of path){ const el=cellAt(r,c); if(el) el.classList.add('found'); } foundIds.add(placement.id); listEl.querySelectorAll('li').forEach(li=>{ if(li.dataset.wordMedial===placement.word) li.classList.add('found'); }); updateCounter(); }
   function clearSelections(clearFound=false){ boardEl.querySelectorAll('.cell').forEach(el=>{ el.classList.remove('selecting'); if(clearFound) el.classList.remove('found'); }); if(clearFound){ foundIds.clear(); listEl.querySelectorAll('li').forEach(li=>li.classList.remove('found')); } }
   function validateSelection(path){ if(path.length<2) return false; for(const p of placements){ if(pathEquals(path,p.path)||pathEquals(path,p.path.slice().reverse())){ if(foundIds.has(p.id)) return true; markFound(path,p); return true; } } return false; }
   function pathEquals(a,b){ if(a.length!==b.length) return false; for(let i=0;i<a.length;i++) if(a[i].r!==b[i].r||a[i].c!==b[i].c) return false; return true; }
   function cellAt(r,c){ return boardEl.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`); }
   function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [arr[i],arr[j]]=[arr[j],arr[i]]; } }
 
-  // --- Pinch-zoom & pan (two fingers) ---
+  // --- Pinch-zoom & pan on zoomLayer ---
   const activePointers = new Map(); // id -> {x,y}
-  zoomLayer.addEventListener('pointerdown', (ev)=>{ activePointers.set(ev.pointerId, {x:ev.clientX, y:ev.clientY}); zoomLayer.setPointerCapture?.(ev.pointerId); }, {passive:false});
-  zoomLayer.addEventListener('pointermove', (ev)=>{
-    if(!activePointers.has(ev.pointerId)) return; ev.preventDefault();
-    const prev = activePointers.get(ev.pointerId); const curr = {x:ev.clientX, y:ev.clientY}; activePointers.set(ev.pointerId,curr);
-    if(activePointers.size===2){
-      const pts = Array.from(activePointers.values());
-      const [p1,p2] = pts; const [dx,dy] = [p2.x-p1.x, p2.y-p1.y];
-      const [cx,cy] = [(p1.x+p2.x)/2, (p1.y+p2.y)/2];
-      // compute previous distance using previous map (we need previous positions). For simplicity, store also lastDistance/center
-    }
-  }, {passive:false});
+  let pinch = null; // {d,cx,cy}
+  function snapshot(){ if(activePointers.size!==2){ pinch=null; return; } const [a,b]=Array.from(activePointers.values()); const dx=b.x-a.x, dy=b.y-a.y; pinch={ d:Math.hypot(dx,dy), cx:(a.x+b.x)/2, cy:(a.y+b.y)/2 }; }
 
-  // We'll implement pinch by tracking the last gesture snapshot
-  let pinch = null; // {d, cx, cy}
-  function updatePinchSnapshot(){
-    if(activePointers.size!==2){ pinch=null; return; }
-    const pts = Array.from(activePointers.values()); const [a,b]=pts; const dx=b.x-a.x, dy=b.y-a.y; const d=Math.hypot(dx,dy); const cx=(a.x+b.x)/2, cy=(a.y+b.y)/2; pinch = {d, cx, cy};
-  }
-
-  zoomLayer.addEventListener('pointermove', (ev)=>{
-    if(activePointers.size===2){
-      const before = pinch; updatePinchSnapshot(); if(!before || !pinch) return;
-      const scaleDelta = pinch.d / before.d; zoomBy(scaleDelta, {x:pinch.cx, y:pinch.cy});
-      // Also pan with center movement
+  zoomLayer.addEventListener('pointerdown', (ev)=>{ activePointers.set(ev.pointerId, {x:ev.clientX, y:ev.clientY}); zoomLayer.setPointerCapture?.(ev.pointerId); snapshot(); }, {passive:false});
+  zoomLayer.addEventListener('pointermove', (ev)=>{ if(!activePointers.has(ev.pointerId)) return; ev.preventDefault(); const curr={x:ev.clientX,y:ev.clientY}; activePointers.set(ev.pointerId,curr);
+    if(activePointers.size===2){ const before=pinch; snapshot(); if(!before||!pinch) return; const scaleDelta = pinch.d / before.d; const old=scale; let next=Math.min(maxScale, Math.max(minScale, scale*scaleDelta)); if(next!==scale){ const cx=pinch.cx, cy=pinch.cy; tx = cx - (cx - tx) * (next/old); ty = cy - (cy - ty) * (next/old); scale=next; }
+      // pan by center movement as well
       tx += (pinch.cx - before.cx); ty += (pinch.cy - before.cy); applyTransform();
-    } else if(activePointers.size===1 && scale>1){
-      // one-finger pan when zoomed in
-      const prev = pinch; const p = Array.from(activePointers.values())[0];
-      // We don't have per-pointer previous stored separately here; simplify by using movementX/Y if available
-      // fallback: do nothing; browsers vary. We'll implement simple delta using a stored last point
     }
   }, {passive:false});
 
-  // Implement one-finger pan when zoomed in using pointer events on wrapper
-  let lastPan = null;
-  zoomLayer.addEventListener('pointerdown', (ev)=>{ if(scale>1 && activePointers.size===0){ lastPan = {x:ev.clientX, y:ev.clientY}; } }, {passive:false});
-  zoomLayer.addEventListener('pointermove', (ev)=>{
-    if(scale>1 && activePointers.size===1 && lastPan){ ev.preventDefault(); const dx = ev.clientX - lastPan.x; const dy = ev.clientY - lastPan.y; tx += dx; ty += dy; lastPan = {x:ev.clientX, y:ev.clientY}; applyTransform(); }
-  }, {passive:false});
-  zoomLayer.addEventListener('pointerup', (ev)=>{ activePointers.delete(ev.pointerId); lastPan=null; updatePinchSnapshot(); }, {passive:false});
-  zoomLayer.addEventListener('pointercancel', (ev)=>{ activePointers.delete(ev.pointerId); lastPan=null; updatePinchSnapshot(); }, {passive:false});
+  let lastPan=null; // one-finger pan when zoomed in
+  zoomLayer.addEventListener('pointerdown', (ev)=>{ if(scale>1 && activePointers.size===0){ lastPan={x:ev.clientX,y:ev.clientY}; } }, {passive:false});
+  zoomLayer.addEventListener('pointermove', (ev)=>{ if(scale>1 && activePointers.size===1 && lastPan){ ev.preventDefault(); const dx=ev.clientX-lastPan.x, dy=ev.clientY-lastPan.y; tx+=dx; ty+=dy; lastPan={x:ev.clientX,y:ev.clientY}; applyTransform(); } }, {passive:false});
+  zoomLayer.addEventListener('pointerup', (ev)=>{ activePointers.delete(ev.pointerId); lastPan=null; snapshot(); }, {passive:false});
+  zoomLayer.addEventListener('pointercancel', (ev)=>{ activePointers.delete(ev.pointerId); lastPan=null; snapshot(); }, {passive:false});
 
-  // keep pinch snapshot in sync
-  zoomLayer.addEventListener('pointerdown', ()=>{ updatePinchSnapshot(); }, {passive:false});
+  // --- Solution overlay (toggle) ---
+  let solutionVisible = false;
+  function setSolution(v){ solutionVisible = !!v; btnToggleSolution.setAttribute('aria-pressed', solutionVisible ? 'true' : 'false'); btnToggleSolution.textContent = solutionVisible ? 'הסתר פתרון' : 'הצג פתרון'; applySolutionOverlay(); }
+  function toggleSolution(){ setSolution(!solutionVisible); }
+  function applySolutionOverlay(){ const cells = boardEl.querySelectorAll('.cell'); cells.forEach(el=>el.classList.remove('solution')); if(!solutionVisible) return; for(const p of placements){ for(const {r,c} of p.path){ const el = cellAt(r,c); el && el.classList.add('solution'); } } }
 
+  // init
   newGame();
 })();

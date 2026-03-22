@@ -5,13 +5,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes" />
   <title>תפזורת שמות</title>
-  <meta name="description" content="תפזורת שמות – משחק רשת מותאם למובייל עם זום וגרירה" />
+  <meta name="description" content="תפזורת שמות – משחק רשת מותאם למובייל עם זום, מונה ופתרון" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="app-header">
     <h1>תפזורת שמות</h1>
     <div class="controls">
+      <div class="counter" aria-live="polite"><span id="found-count">0</span>/<span id="total-count">0</span> נמצאו</div>
+      <button id="btn-toggle-solution" aria-pressed="false">הצג פתרון</button>
       <button id="btn-new">משחק חדש</button>
       <button id="btn-reset">איפוס סימונים</button>
     </div>
@@ -19,12 +21,6 @@
 
   <main class="container">
     <section class="board-wrapper" id="board-wrapper">
-      <div class="zoom-toolbar">
-        <button id="zoom-out" title="-">−</button>
-        <span id="zoom-label">100%</span>
-        <button id="zoom-in" title="+">+</button>
-        <button id="zoom-reset" title="איפוס זום">איפוס</button>
-      </div>
       <div id="zoom-layer" class="zoom-layer">
         <div id="board" class="board" aria-label="לוח המשחק" role="grid"></div>
       </div>
@@ -32,7 +28,7 @@
     <aside class="sidebar">
       <h2>רשימת שמות</h2>
       <ul id="word-list" class="word-list"></ul>
-      <p class="note">מחוות: צביטה לשינוי זום (2 אצבעות), גרירה בשתי אצבעות להזזה. נגיעה באצבע אחת לבחירת אותיות.</p>
+      <p class="note">טיפ: צביטה עם שתי אצבעות לזום; גרירה בשתי אצבעות להזזה. נגיעה באצבע אחת לבחירת אותיות.</p>
     </aside>
   </main>
 
@@ -41,6 +37,7 @@
       <span class="badge badge-pending">לא נמצא</span>
       <span class="badge badge-found">נמצא</span>
       <span class="badge badge-selecting">בבחירה</span>
+      <span class="badge badge-solution">פתרון</span>
     </div>
   </footer>
 

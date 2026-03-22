@@ -1,1 +1,1 @@
-Added pinch-zoom & pan with on-screen controls. One-finger selects. Two-finger pinch/drag zooms and pans. Also +/- buttons.
+Solution toggle + counter; removed on-screen zoom toolbar; kept pinch-zoom/pan gestures.
