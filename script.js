@@ -5,7 +5,7 @@
   // --- Hebrew helpers ---
   const finalMap = new Map(Object.entries({ 'כ':'ך','מ':'ם','נ':'ן','פ':'ף','צ':'ץ' }));
   const medialFromFinal = new Map(Array.from(finalMap.entries()).map(([k,v])=>[v,k]));
-  const hebrewLetters = Array.from('אבגדהוזחטיכלמנסעפצקרשת'); // medial only
+  const hebrewLetters = Array.from('אבגדהוזחטיכלמנסעפצקרשת');
   const isHebrew = ch => /[֐-׿]/.test(ch);
   const normalize = name => name.split('').filter(isHebrew).map(ch => medialFromFinal.get(ch) || ch).join('');
 
@@ -19,7 +19,7 @@
   const boardEl = document.getElementById('board');
   const listEl = document.getElementById('word-list');
   const btnNew = document.getElementById('btn-new');
-  const btnReset = document.getElementById('btn-reset');
+  const btnResetView = document.getElementById('btn-reset-view');
   const btnToggleSolution = document.getElementById('btn-toggle-solution');
   const foundCountEl = document.getElementById('found-count');
   const totalCountEl = document.getElementById('total-count');
@@ -31,7 +31,7 @@
   function resetView(){ scale=1; tx=0; ty=0; applyTransform(); }
 
   btnNew.addEventListener('click', () => { newGame(true); });
-  btnReset.addEventListener('click', () => { clearSelections(true); updateCounter(); });
+  btnResetView.addEventListener('click', () => { resetView(); });
   btnToggleSolution.addEventListener('click', () => { toggleSolution(); });
 
   function newGame(){
@@ -46,7 +46,6 @@
   }
 
   function updateCounter(){
-    // Count distinct words found
     const wordsFound = new Set();
     for(const p of placements){ if(foundIds.has(p.id)) wordsFound.add(p.word); }
     foundCountEl.textContent = wordsFound.size;
@@ -139,7 +138,6 @@
   function clearSelectingClasses(){ boardEl.querySelectorAll('.cell.selecting').forEach(el=>el.classList.remove('selecting')); }
   function flashWrong(path){ for(const {r,c} of path){ const el=cellAt(r,c); if(el){ el.classList.add('wrong'); setTimeout(()=>el.classList.remove('wrong'),250); } } }
   function markFound(path, placement){ for(const {r,c} of path){ const el=cellAt(r,c); if(el) el.classList.add('found'); } foundIds.add(placement.id); listEl.querySelectorAll('li').forEach(li=>{ if(li.dataset.wordMedial===placement.word) li.classList.add('found'); }); updateCounter(); }
-  function clearSelections(clearFound=false){ boardEl.querySelectorAll('.cell').forEach(el=>{ el.classList.remove('selecting'); if(clearFound) el.classList.remove('found'); }); if(clearFound){ foundIds.clear(); listEl.querySelectorAll('li').forEach(li=>li.classList.remove('found')); } }
   function validateSelection(path){ if(path.length<2) return false; for(const p of placements){ if(pathEquals(path,p.path)||pathEquals(path,p.path.slice().reverse())){ if(foundIds.has(p.id)) return true; markFound(path,p); return true; } } return false; }
   function pathEquals(a,b){ if(a.length!==b.length) return false; for(let i=0;i<a.length;i++) if(a[i].r!==b[i].r||a[i].c!==b[i].c) return false; return true; }
   function cellAt(r,c){ return boardEl.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`); }
@@ -153,7 +151,6 @@
   zoomLayer.addEventListener('pointerdown', (ev)=>{ activePointers.set(ev.pointerId, {x:ev.clientX, y:ev.clientY}); zoomLayer.setPointerCapture?.(ev.pointerId); snapshot(); }, {passive:false});
   zoomLayer.addEventListener('pointermove', (ev)=>{ if(!activePointers.has(ev.pointerId)) return; ev.preventDefault(); const curr={x:ev.clientX,y:ev.clientY}; activePointers.set(ev.pointerId,curr);
     if(activePointers.size===2){ const before=pinch; snapshot(); if(!before||!pinch) return; const scaleDelta = pinch.d / before.d; const old=scale; let next=Math.min(maxScale, Math.max(minScale, scale*scaleDelta)); if(next!==scale){ const cx=pinch.cx, cy=pinch.cy; tx = cx - (cx - tx) * (next/old); ty = cy - (cy - ty) * (next/old); scale=next; }
-      // pan by center movement as well
       tx += (pinch.cx - before.cx); ty += (pinch.cy - before.cy); applyTransform();
     }
   }, {passive:false});

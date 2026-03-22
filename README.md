@@ -1,1 +1,1 @@
-Solution toggle + counter; removed on-screen zoom toolbar; kept pinch-zoom/pan gestures.
+Top-only controls: Solution toggle, Reset View, New Game. Title changed to 'תפזורת שמות ISR'.
