@@ -1,0 +1,44 @@
+
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>תפזורת שמות</title>
+  <meta name="description" content="תפזורת שמות – משחק רשת מותאם למובייל" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>תפזורת שמות</h1>
+    <div class="controls">
+      <button id="btn-new">משחק חדש</button>
+      <button id="btn-reset">איפוס סימונים</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="board-wrapper">
+      <div id="board" class="board" aria-label="לוח המשחק" role="grid"></div>
+    </section>
+    <aside class="sidebar">
+      <h2>רשימת שמות</h2>
+      <ul id="word-list" class="word-list"></ul>
+    </aside>
+  </main>
+
+  <footer class="app-footer">
+    <div class="legend">
+      <span class="badge badge-pending">לא נמצא</span>
+      <span class="badge badge-found">נמצא</span>
+      <span class="badge badge-selecting">בבחירה</span>
+    </div>
+    <p class="note">טיפ: גררו עם האצבע או העכבר מראשית המילה עד סופה (כולל אלכסונים).</p>
+  </footer>
+
+  <script>
+    window.HEBREW_NAMES = ["דרור כרמלי", "לילך ואנונו", "דוד רטר", "ניר עפרת", "עודד נריה", "ענת לנדאו", "ארז פיקסל", "אבי ויסמן", "יוסי פרי-דן", "רון עברי", "אריק מימרן", "שלומי כרמל", "אריאל רווח", "יגאל שמיר", "קובי אדלמן", "גידי נחשוני", "מורן איציק", "דניאל ברם", "גיא כץ", "ניתאי שיין", "רענן גיל", "קונסטנטין טרנה", "אביב נווה", "סימונה גלמן"];
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>
